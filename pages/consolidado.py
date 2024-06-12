@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import json
+import time
 import dash_bootstrap_components as dbc
 from datetime import datetime, timedelta
 from dash import html, dcc, callback, Input, Output
@@ -57,12 +58,20 @@ def grafico_barras_queimadas_intervalo_de_dias(date1, date2):
     return px.bar(df_final, x='bioma', y='foco_queimadas', color='foco_queimadas', title=title, color_continuous_scale="Reds")
 
 
+@callback(Output('botao_gerar_graficos','n_clicks'),
+             [Input('botao_gerar_graficos','n_clicks')])
+def update(reset):
+    time.sleep(1)
+    return 0
+
+
 @callback(
     Output('grafico-estados-mais-afetados', 'figure'),
     Input('dia-inicio-graficos', 'date'),
     Input('dia-fim-graficos', 'date')
 )
-def grafico_barras_queimadas_intervalo_de_dias(date1, date2):
+def grafico_estados_mais_afetados(date1, date2):
+
     data_inicio = datetime.strptime(date1, "%Y-%m-%d")
     data_fim = datetime.strptime(date2, "%Y-%m-%d")
     
@@ -134,12 +143,12 @@ def grafico_barras_queimadas_intervalo_de_dias(date1, date2):
         title=f'Estados mais afetados pelas queimadas em {datetime.strptime(date1, "%Y-%m-%d").strftime("%d/%m/%Y")}'
 
     df_final['estados'] = df_final['estados'].map(dicionario_estados)
-
     geojson = json.load(open('./local_resources/brasil_estados.json'))
     return px.choropleth(df_final, geojson=geojson, locations='estados', scope='south america', color_continuous_scale="Reds", color='queimadas_estado', width=700, height=900, title=title)
-    
+       
 
 layout = html.Div([
+    html.Br(),
     html.H2("Dados Consolidados"),
     html.P("Os Dados Consolidados tratam-se de um conjunto de dados vindos dos registros do BDQueimadas, a fim de melhor visualizar dentro do intervalo máximo de aproximadamente um mês, quais os biomas e estados mais afetados por focos de queimadas"),
     html.Br(),
@@ -155,9 +164,8 @@ layout = html.Div([
             dcc.DatePickerSingle(id='dia-fim-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY")
             ], width="auto"),
         ]),
-    dcc.Graph(id="grafico-barras-biomas"),
-    dcc.Graph(id="grafico-estados-mais-afetados", style={"align": "center"})
-
+    dcc.Loading([dcc.Graph(id="grafico-barras-biomas")], id="loading-1", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Loading([dcc.Graph(id="grafico-estados-mais-afetados")], id="loading-2", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"})
 ], className="pad-row")
 
 
