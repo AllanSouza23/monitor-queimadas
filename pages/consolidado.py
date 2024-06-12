@@ -29,28 +29,21 @@ def grafico_barras_queimadas_intervalo_de_dias(date1, date2):
     
     df_final = pd.DataFrame({'bioma': bioma_lista, 'queimadas_registradas': [0, 0, 0, 0, 0, 0]})
 
-    print(intervalo_de_dias)
     for dia in intervalo_de_dias:
         df = pd.read_csv(f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv")
 
         new_df = pd.DataFrame({'bioma': df['bioma'].unique(), 'queimadas_registradas':  df['bioma'].value_counts()})
         
         new_df.reset_index(drop = True, inplace = True)
-        biomas.reset_index(drop = True, inplace = True)
-        print(f'new_df\n {new_df}')
-            
+        biomas.reset_index(drop = True, inplace = True)        
 
         new_df = pd.merge(new_df, biomas, how='right', on='bioma')
         for item in range(0, len(new_df['queimadas_registradas'])):
-            print(f"debug: {new_df['bioma'][item]}, valor: {new_df['queimadas_registradas'][item]}")
-                
             if np.isnan(new_df['queimadas_registradas'][item]):
                 new_df.loc[item, ['queimadas_registradas']] = [0]
 
         for item in range(0, len(df_final['queimadas_registradas'])):
             df_final.loc[item, ['queimadas_registradas']] = [df_final['queimadas_registradas'][item] + new_df['queimadas_registradas'][item]]
-
-    print(f'df_final\n {df_final}')
         
     if len(intervalo_de_dias) > 1: 
         title=f'Queimadas Registradas por Bioma de {datetime.strptime(date1, "%Y-%m-%d").strftime("%d/%m/%Y")} até {datetime.strptime(date2, "%Y-%m-%d").strftime("%d/%m/%Y")}'
