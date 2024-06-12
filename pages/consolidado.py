@@ -2,7 +2,8 @@ import dash
 import pandas as pd
 import numpy as np
 import plotly.express as px
-from datetime import datetime, timedelta, time
+import dash_bootstrap_components as dbc
+from datetime import datetime, timedelta
 from dash import html, dcc, callback, Input, Output
 
 
@@ -15,7 +16,7 @@ bioma_lista = ['Amazônia', 'Mata Atlântica', 'Cerrado', 'Pantanal', 'Pampa', '
     Input('dia-inicio-span-tempo', 'date'),
     Input('dia-fim-span-tempo', 'date')
 )
-def get_last_week_values(date1, date2):
+def grafico_barras_queimadas_intervalo_de_dias(date1, date2):
     data_inicio = datetime.strptime(date1, "%Y-%m-%d")
     data_fim = datetime.strptime(date2, "%Y-%m-%d")
     
@@ -51,43 +52,30 @@ def get_last_week_values(date1, date2):
 
     print(f'df_final\n {df_final}')
         
-    return px.bar(df_final, x='bioma', y='queimadas_registradas', color='bioma', title=f'Queimadas Registradas por Bioma de {datetime.strptime(date1, "%Y-%m-%d").strftime("%d/%m/%Y")} até {datetime.strptime(date2, "%Y-%m-%d").strftime("%d/%m/%Y")}')
+    if len(intervalo_de_dias) > 1: 
+        title=f'Queimadas Registradas por Bioma de {datetime.strptime(date1, "%Y-%m-%d").strftime("%d/%m/%Y")} até {datetime.strptime(date2, "%Y-%m-%d").strftime("%d/%m/%Y")}'
+    else: 
+        title=f'Queimadas Registradas por Bioma em {datetime.strptime(date1, "%Y-%m-%d").strftime("%d/%m/%Y")}'
 
-@callback(
-    Output('grafico-consolidado-queimadas-por-bioma-em-um-dia', 'figure'),
-    Input('dia-selecionado-queimadas-por-bioma', 'date')
-)
+    return px.bar(df_final, x='bioma', y='queimadas_registradas', color='bioma', title=title)
 
-def update_chart_queimadas_bioma_dia(date):
-    dia = datetime.strptime(date, "%Y-%m-%d").strftime("%Y%m%d")
- 
-    df = pd.read_csv(f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv")
 
-    biomas = pd.DataFrame({'bioma': ['Amazônia', 'Mata Atlântica', 'Cerrado', 'Pantanal', 'Pampa', 'Caatinga']})
-    
-    new_df = pd.DataFrame({'bioma': df['bioma'].unique(), 'queimadas_registradas':  df['bioma'].value_counts()})
-    biomas.reset_index(drop = True, inplace = True)
-    new_df.reset_index(drop = True, inplace = True)
-
-    new_df = pd.merge(new_df, biomas, how='right', on='bioma')
-
-    for item in range(0, len(new_df['queimadas_registradas']) - 1):
-        if np.isnan(new_df['queimadas_registradas'][item]):
-            new_df.loc[item, ['queimadas_registradas']] = [0]
-
-    
-    return px.bar(new_df, x='bioma', y='queimadas_registradas', color='bioma', title=f'Queimadas Registradas por Bioma em {datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m/%Y")}')
-   
 layout = html.Div([
     html.H4("Nesta seção, encontram-se gráficos com dados consolidados registrados até o dia corrente"),
     html.Br(),
-    html.B("Selecione o dia para visualização: "),
-    dcc.DatePickerSingle(id='dia-selecionado-queimadas-por-bioma', date=datetime.today().date(), display_format="DD/MM/YYYY"),
-    dcc.Graph(id="grafico-consolidado-queimadas-por-bioma-em-um-dia"),
-    html.Hr(),
-    dcc.DatePickerSingle(id='dia-inicio-span-tempo', date=datetime.today().date(), display_format="DD/MM/YYYY"),
-    dcc.DatePickerSingle(id='dia-fim-span-tempo', date=datetime.today().date(), display_format="DD/MM/YYYY"),
-    dcc.Graph(id="grafico-span-tempo")
-])
+    dbc.Col(html.B("Selecione o intervalo para visualização"), style={"margin-bottom": "0.5em"}),
+    html.Br(),
+    dbc.Row([
+        dbc.Col([
+            html.B("Data de início: "),
+            dcc.DatePickerSingle(id='dia-inicio-span-tempo', date=datetime.today().date(), display_format="DD/MM/YYYY")
+            ], width="auto"),
+        dbc.Col([
+            html.B("Data de fim: "),
+            dcc.DatePickerSingle(id='dia-fim-span-tempo', date=datetime.today().date(), display_format="DD/MM/YYYY")
+            ], width="auto"),
+        ]),
+    dcc.Graph(id="grafico-span-tempo", responsive=True)
+], className="pad-row")
 
 
