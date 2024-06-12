@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import json
-import time
 import dash_bootstrap_components as dbc
 from datetime import datetime, timedelta
 from dash import html, dcc, callback, Input, Output
@@ -56,13 +55,6 @@ def grafico_barras_queimadas_intervalo_de_dias(date1, date2):
 
     df_final = df_final.sort_values(by='foco_queimadas')
     return px.bar(df_final, x='bioma', y='foco_queimadas', color='foco_queimadas', title=title, color_continuous_scale="Reds")
-
-
-@callback(Output('botao_gerar_graficos','n_clicks'),
-             [Input('botao_gerar_graficos','n_clicks')])
-def update(reset):
-    time.sleep(1)
-    return 0
 
 
 @callback(
