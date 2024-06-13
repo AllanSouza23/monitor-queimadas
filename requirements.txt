@@ -6,3 +6,5 @@ geopy
 flask
 dash-bootstrap-components
 matplotlib
+schedule
+reverse-geocode
