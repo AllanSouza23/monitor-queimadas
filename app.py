@@ -3,8 +3,7 @@ import dash_bootstrap_components as dbc
 from dash import Dash, html
 
 app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.BOOTSTRAP], meta_tags=[
-        {"name": "viewport", "content": "width=device-width, initial-scale=1"}
-    ])
+        {"name": "viewport", "content": "width=device-width, initial-scale=1"}], prevent_initial_callbacks=True)
 
 navbar = dbc.NavbarSimple(
     children=[
@@ -14,13 +13,14 @@ navbar = dbc.NavbarSimple(
             children=[
                 dbc.DropdownMenuItem("Dados Consolidados", href="/consolidado"),
                 dbc.DropdownMenuItem("Agora", href="/agora"),
-                dbc.DropdownMenuItem("Previsão", href="/previsao"),
-
+                # dbc.DropdownMenuItem("Previsão", href="/previsao"),
             ],
             nav=True,
             in_navbar=True,
             label="Gráficos",
         ),
+        dbc.NavItem(dbc.NavLink("Reportar Problema", href="https://github.com/AllanSouza23/monitor-queimadas/issues/new/choose")),
+        
     ],
     brand="Monitor Queimadas",
     brand_href="/",

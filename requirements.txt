@@ -8,3 +8,5 @@ dash-bootstrap-components
 matplotlib
 schedule
 reverse-geocode
+seaborn
+scikit-learn

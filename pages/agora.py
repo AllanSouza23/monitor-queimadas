@@ -1,21 +1,26 @@
 import dash
 import pandas as pd
+import numpy as np
 import plotly.express as px
+import json
 import dash_bootstrap_components as dbc
-from datetime import datetime, timedelta
-from dash import html, dcc, callback, Input, Output
 import reverse_geocode
+from datetime import datetime
+from dash import html, dcc, callback, Input, Output, State
+
 
 dash.register_page(__name__)
 
 
 @callback(
-        Output('abc', 'figure'),
-        Input('dia', 'value'),
-        Input('momento', 'value'),
-        Input('botao', 'n_clicks')
+        Output('graph', 'figure'),
+        #Input('dia1', 'value'),
+        State('graph', 'figure'),
+        Input('botao1', 'n_clicks')
 )
-def grafico_pontos(dia, momento, n):
+def grafico_linha(fig, n):
+    dia = '20240612'
+    momento = '0220'
     if n:
         dicionario_estados = {
             'ACRE': 'AC',
@@ -72,21 +77,33 @@ def grafico_pontos(dia, momento, n):
         print(new_df)
         new_df = new_df.sort_values(by="queimadas_estado")
         
-        fig = px.bar(new_df, x='estados', y='queimadas_estado', color_continuous_scale="Reds", color='queimadas_estado', title=f'{dia} Queimadas no Brasil {momento}')
-        fig.show()
-        return fig
-        
+        return px.bar(new_df, x='estados', y='queimadas_estado', color_continuous_scale="Reds", color='queimadas_estado')
 
 layout = html.Div([
     html.Br(),
-    html.H2("Dados em Tempo Real"),
-    html.P("Os Dados em Tempo Real buscam evidenciar focos de queimadas ativos em cada bioma e estado brasileiro, tendo o período de atualização de 10 minutos"),
+    html.H2("Dados Consolidados"),
+    html.P("Os Dados Consolidados tratam-se de um conjunto de dados vindos dos registros do BDQueimadas, a fim de melhor visualizar dentro do intervalo máximo de aproximadamente um mês, quais os biomas e estados mais afetados por focos de queimadas"),
+    html.Br(),
+    dbc.Col(html.B("Selecione um intervalo para visualização"), style={"margin-bottom": "0.5em"}),
     html.Br(),
     dbc.Row([
-        dbc.Col(dcc.Input(id="dia"), width="auto"), 
-        dbc.Col(dcc.Input(id="momento"), width="auto"),
-        dbc.Col(html.Button('click', id="botao", n_clicks=0), width="auto"),
+        dbc.Col([
+            html.B("Data de início: "),
+            dcc.DatePickerSingle(id='dia-inicio-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY")
+            ], width="auto"),
+        dbc.Col([
+            html.B("Data de fim: "),
+            dcc.DatePickerSingle(id='dia-fim-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY")
+            ], width="auto"),
+        ]),
+    dcc.Loading([dcc.Graph(id="grafico-barras-biomas1")], id="loading-3", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Loading([dcc.Graph(id="grafico-estados-mais-afetados1")], id="loading-4", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Loading([dcc.Graph(id="graph")], id="loading-5", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dbc.Row([
+        #dbc.Col(dcc.Input(id="dia1"), width="auto"), 
+        #dbc.Col(dcc.Input(id="momento1"), width="auto"),
+        dbc.Col(html.Button('click', id="botao1", n_clicks=0), width="auto"),
     ]),
-    dcc.Loading(dcc.Graph(id="abc"), id="loading-1", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
-    #dcc.Loading([dcc.Graph(id="grafico-estados-mais-afetados")], id="loading-2", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"})
 ], className="pad-row")
+
+
