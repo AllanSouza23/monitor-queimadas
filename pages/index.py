@@ -22,7 +22,7 @@ issues = f'''
 
 card_cop = dbc.Card(
     [
-        dbc.CardImg(src="/static/images/cop.jpg", top=True),
+        dbc.CardImg(src="/static/images/cop.jpg", top=True, style={"height": "12rem"}),
         dbc.CardBody(
             [
                 html.H4("COP", className="card-title"),
@@ -39,7 +39,7 @@ card_cop = dbc.Card(
 
 card_mudancas = dbc.Card(
     [
-        dbc.CardImg(src="/static/images/mudancas-climaticas.jpg", top=True),
+        dbc.CardImg(src="/static/images/mudancas-climaticas.jpg", top=True, style={"height": "12rem"}),
         dbc.CardBody(
             [
                 html.H4("Mudanças Climáticas", className="card-title"),
@@ -47,7 +47,7 @@ card_mudancas = dbc.Card(
                     "Aqui, você verá uma discussão a respeito das crescentes mudanças climáticas no Brasil",
                     className="card-text",
                 ),
-                dbc.Button("Acessar", color="primary", href="/mudancas"),
+                dbc.Button("Acessar", color="primary", href="/mudancas-climaticas"),
             ]
         ),
     ],
@@ -56,7 +56,7 @@ card_mudancas = dbc.Card(
 
 card_consolidado = dbc.Card(
     [
-        dbc.CardImg(src="/static/images/consolidado.jpg", top=True),
+        dbc.CardImg(src="/static/images/icone-grafico-barras.png", top=True, style={"height": "12rem"}),
         dbc.CardBody(
             [
                 html.H4("Dados Consolidados", className="card-title"),
@@ -73,7 +73,7 @@ card_consolidado = dbc.Card(
 
 card_agora = dbc.Card(
     [
-        dbc.CardImg(src="/static/images/agora.jpg", top=True),
+        dbc.CardImg(src="/static/images/clock.jpg", top=True, style={"height": "12rem"}),
         dbc.CardBody(
             [
                 html.H4("Agora", className="card-title"),
@@ -91,10 +91,13 @@ card_agora = dbc.Card(
 
 
 layout = html.Div([
+        html.Br(),
         html.H1('Seja bem-vindo ao Monitor Queimadas!'),
-       dbc.Row(
+        html.Br(),
+        dbc.Row(
         [dbc.Col(card_mudancas), dbc.Col(card_cop), dbc.Col(card_consolidado), dbc.Col(card_agora)],
         ),
+        html.Br(),
         html.Div([
                 html.H4("Perguntas Frequentes"),
                 dbc.Accordion([dbc.AccordionItem(title="O que é o projeto Monitor Queimadas?",
