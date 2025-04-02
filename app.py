@@ -12,8 +12,8 @@ navbar = dbc.NavbarSimple(
         dbc.DropdownMenu(
             children=[
                 dbc.DropdownMenuItem("Dados Consolidados", href="/consolidado"),
-                dbc.DropdownMenuItem("Agora", href="/agora"),
-                # dbc.DropdownMenuItem("Previsão", href="/previsao"),
+                #dbc.DropdownMenuItem("Agora", href="/agora"),
+                dbc.DropdownMenuItem("Agora Refactored", href="/agora-refactored"),
             ],
             nav=True,
             in_navbar=True,
