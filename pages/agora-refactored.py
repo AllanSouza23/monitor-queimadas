@@ -61,7 +61,23 @@ async def fetch_data():
             if response.status != 200:
                 return None
             data = await response.text()
-            return pd.read_csv(io.StringIO(data))
+            df = pd.DataFrame(pd.read_csv(io.StringIO(data)))
+
+            pais = []
+            estado = []
+
+            for i, infos in df.iterrows():
+                loc = reverse_geocode.search([(infos.lat, infos.lon)])[0]
+                p = loc.get('country')
+                e = str(loc.get('state')).upper()
+                pais.append(p)
+                estado.append(e)
+
+            df = df.assign(pais=pais)
+            df = df.assign(estados=estado)
+            df = df[df['pais'] == 'Brazil']
+            df['pais'] = 'Brasil'
+            return df
 
 @callback(
     Output('store-data', 'data'),
@@ -88,21 +104,6 @@ def update_ultima_atualizacao(n):
 )
 def grafico_barras_biomas(data):
     df = pd.DataFrame(data)
-
-    pais = []
-    estado = []
-
-    for i, infos in df.iterrows():
-        loc = reverse_geocode.search([(infos.lat, infos.lon)])[0]
-        p = loc.get('country')
-        e = str(loc.get('state')).upper()
-        pais.append(p)
-        estado.append(e)
-
-    df = df.assign(pais=pais)
-    df = df.assign(estados=estado)
-    df = df[df['pais'] == 'Brazil']
-    df['pais'] = 'Brasil'
     df['estados'] = df['estados'].map(dicionario_estados)
     df.assign(queimadas_bioma=1)
     df['queimadas_bioma'] = 1
@@ -117,22 +118,6 @@ def grafico_barras_biomas(data):
 )
 def grafico_pizza(data):
     df = pd.DataFrame(data)
-    pais = []
-    estado = []
-
-    for i, infos in df.iterrows():
-        loc = reverse_geocode.search([(infos.lat, infos.lon)])[0]
-        p = loc.get('country')
-        e = str(loc.get('state')).upper()
-        pais.append(p)
-        estado.append(e)
-
-    df = df.assign(pais=pais)
-    df = df.assign(estados=estado)
-    df = df[df['pais'] == 'Brazil']
-    print(df)
-    df['pais'] = 'Brasil'
-    print(df)
     df['estados'] = df['estados'].map(dicionario_estados)
     df['queimadas_estado'] = df.groupby('estados')['estados'].transform('count')
     new_df = df[['estados', 'queimadas_estado']].groupby('estados').sum().reset_index()
