@@ -2,14 +2,11 @@ import dash
 import pandas as pd
 import plotly.express as px
 import io
-import os
 import reverse_geocode
 from datetime import datetime
-from dash import html, dcc, callback, Input, Output, State
+from dash import html, dcc, callback, Input, Output
 import aiohttp
 import asyncio
-import geopandas as gpd
-from shapely.geometry import Point
 
 dash.register_page(__name__)
 
@@ -61,8 +58,21 @@ async def fetch_data():
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
+            if response.status != 200:
+                return None
             data = await response.text()
             return pd.read_csv(io.StringIO(data))
+
+@callback(
+    Output('store-data', 'data'),
+    Output('dados-indisponiveis', 'displayed'),
+    Input('interval-component', 'n_intervals')
+)
+def update_store_data(n):
+    df = asyncio.run(fetch_data())
+    if df is None:
+        return dash.no_update, True
+    return df.to_dict('records'), False
 
 @callback(
     Output('ultima-atualizacao', 'children'),
@@ -73,13 +83,15 @@ def update_ultima_atualizacao(n):
     return now
 
 @callback(
-    Output('graph2', 'figure'),
-    Input('interval-component', 'n_intervals')
+    Output('grafico-barras-biomas1', 'figure'),
+    Input('store-data', 'data')
 )
-def grafico_pizza(n):
-    df = asyncio.run(fetch_data())
+def grafico_barras_biomas(data):
+    df = pd.DataFrame(data)
+
     pais = []
     estado = []
+
     for i, infos in df.iterrows():
         loc = reverse_geocode.search([(infos.lat, infos.lon)])[0]
         p = loc.get('country')
@@ -87,25 +99,53 @@ def grafico_pizza(n):
         pais.append(p)
         estado.append(e)
 
-    print (df)
     df = df.assign(pais=pais)
     df = df.assign(estados=estado)
     df = df[df['pais'] == 'Brazil']
     df['pais'] = 'Brasil'
     df['estados'] = df['estados'].map(dicionario_estados)
-    df.assign(queimadas_estado=1)
-    df['queimadas_estado'] = 1
+    df.assign(queimadas_bioma=1)
+    df['queimadas_bioma'] = 1
+    new_df = df[['bioma', 'queimadas_bioma']].groupby('bioma').sum().reset_index()
+
+    new_df = new_df.sort_values(by="queimadas_bioma")
+    return px.bar(new_df, x='bioma', y='queimadas_bioma', color='queimadas_bioma', title='Queimadas por Bioma')
+
+@callback(
+    Output('graph2', 'figure'),
+    Input('store-data', 'data')
+)
+def grafico_pizza(data):
+    df = pd.DataFrame(data)
+    pais = []
+    estado = []
+
+    for i, infos in df.iterrows():
+        loc = reverse_geocode.search([(infos.lat, infos.lon)])[0]
+        p = loc.get('country')
+        e = str(loc.get('state')).upper()
+        pais.append(p)
+        estado.append(e)
+
+    df = df.assign(pais=pais)
+    df = df.assign(estados=estado)
+    df = df[df['pais'] == 'Brazil']
+    print(df)
+    df['pais'] = 'Brasil'
+    print(df)
+    df['estados'] = df['estados'].map(dicionario_estados)
+    df['queimadas_estado'] = df.groupby('estados')['estados'].transform('count')
     new_df = df[['estados', 'queimadas_estado']].groupby('estados').sum().reset_index()
 
     new_df = new_df.sort_values(by="queimadas_estado")
     return px.pie(new_df, names='estados', values='queimadas_estado', color_discrete_sequence=px.colors.sequential.Inferno_r, title='Queimadas por Estado')
 
 @callback(
-    Output('queimadas-contagem', 'figure'),
-    Input('interval-component', 'n_intervals')
+    Output('queimadas-contagem', 'children'),
+    Input('store-data', 'data')
 )
-def queimadas_contagem(n):
-    df = asyncio.run(fetch_data())
+def queimadas_contagem(data):
+    df = pd.DataFrame(data)
     return 'Queimadas registradas: ' + str(len(df))
 
 layout = html.Div([
@@ -119,6 +159,11 @@ layout = html.Div([
     dcc.Loading([dcc.Graph(id="grafico-barras-biomas1")], id="loading-3", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
     dcc.Loading([dcc.Graph(id="grafico-estados-mais-afetados1")], id="loading-4", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
     dcc.Loading([dcc.Graph(id="graph2")], id="loading-5", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Store(id='store-data'),
+    dcc.ConfirmDialog(
+        id='dados-indisponiveis',
+        message='A fonte dos dados está indisponível no momento. Por favor, tente novamente mais tarde.'
+    ),
     dcc.Interval(
         id='interval-component',
         interval=0.175*60*1000,  # Atualiza a cada 10 minutos
