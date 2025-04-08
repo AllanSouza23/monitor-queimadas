@@ -7,8 +7,17 @@ from datetime import datetime
 from dash import html, dcc, callback, Input, Output
 import aiohttp
 import asyncio
+import json
+import os
 
 dash.register_page(__name__)
+
+current_dir = os.path.dirname(__file__)
+brasil_estados_path = os.path.join(current_dir, '../local_resources/brasil_estados.json')
+
+geo_json = None
+with open(brasil_estados_path, 'r') as file:
+    geo_json = json.load(file)
 
 dicionario_horarios = {
     '00:00': '0300', '00:10': '0310', '00:20': '0320', '00:30': '0330', '00:40': '0340', '00:50': '0350',
@@ -53,7 +62,8 @@ async def fetch_data():
     hora_atual = datetime.now().strftime('%H:%M')
 
     # Converte o horário atual usando o dicionário
-    momento = dicionario_horarios.get(hora_atual, '0000')
+    momento = dicionario_horarios.get(f"{hora_atual[:4]}0", '0000')
+
     url = f'https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/10min/focos_10min_{dia}_{momento}.csv'
 
     async with aiohttp.ClientSession() as session:
@@ -99,18 +109,17 @@ def update_ultima_atualizacao(n):
     return now
 
 @callback(
-    Output('grafico-barras-biomas1', 'figure'),
+Output('grafico-dispersao', 'figure'),
     Input('store-data', 'data')
 )
-def grafico_barras_biomas(data):
+def grafico_dispersao(data):
     df = pd.DataFrame(data)
     df['estados'] = df['estados'].map(dicionario_estados)
-    df.assign(queimadas_bioma=1)
-    df['queimadas_bioma'] = 1
-    new_df = df[['bioma', 'queimadas_bioma']].groupby('bioma').sum().reset_index()
 
-    new_df = new_df.sort_values(by="queimadas_bioma")
-    return px.bar(new_df, x='bioma', y='queimadas_bioma', color='queimadas_bioma', title='Queimadas por Bioma')
+    fig = px.scatter_geo(df, lon='lon', lat='lat', color='estados', title='Dispersão de Queimadas', geojson=geo_json, locations='estados', featureidkey='properties.sigla')
+    # fig.update_geos(fitbounds="locations")
+    fig.update_layout(title='Dispersão de Queimadas', showlegend=True)
+    return fig
 
 @callback(
     Output('graph2', 'figure'),
@@ -118,7 +127,6 @@ def grafico_barras_biomas(data):
 )
 def grafico_pizza(data):
     df = pd.DataFrame(data)
-    df['estados'] = df['estados'].map(dicionario_estados)
     df['queimadas_estado'] = df.groupby('estados')['estados'].transform('count')
     new_df = df[['estados', 'queimadas_estado']].groupby('estados').sum().reset_index()
 
@@ -141,8 +149,7 @@ layout = html.Div([
     html.Br(),
     html.P(id="queimadas-contagem"),
     html.Br(),
-    dcc.Loading([dcc.Graph(id="grafico-barras-biomas1")], id="loading-3", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
-    dcc.Loading([dcc.Graph(id="grafico-estados-mais-afetados1")], id="loading-4", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Loading([dcc.Graph(id="grafico-dispersao")], id="loading-3", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
     dcc.Loading([dcc.Graph(id="graph2")], id="loading-5", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
     dcc.Store(id='store-data'),
     dcc.ConfirmDialog(
