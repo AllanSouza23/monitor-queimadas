@@ -8,17 +8,11 @@ from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 import aiohttp
 import asyncio
-import json
 import os
 
 dash.register_page(__name__)
 
 current_dir = os.path.dirname(__file__)
-brasil_estados_path = os.path.join(current_dir, '../local_resources/brasil_estados.json')
-
-geo_json = None
-with open(brasil_estados_path, 'r') as file:
-    geo_json = json.load(file)
 
 dicionario_horarios = {
     '00:00': '0300', '00:10': '0310', '00:20': '0320', '00:30': '0330', '00:40': '0340', '00:50': '0350',
@@ -80,13 +74,8 @@ async def fetch_data(use_local_csv=False):
         df = pd.DataFrame(pd.read_csv(io.StringIO(data)))
         return padroniza_dataframe(df)
 
-    # Obtém a data atual no formato YYYYMMDD
     dia = datetime.now().strftime('%Y%m%d')
-
-    # Obtém o horário atual no formato HH:MM
     hora_atual = datetime.now().strftime('%H:%M')
-
-    # Converte o horário atual usando o dicionário
     momento = dicionario_horarios.get(f"{hora_atual[:4]}0", '0000')
 
     url = f'https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/10min/focos_10min_{dia}_{momento}.csv'
@@ -120,18 +109,33 @@ def update_ultima_atualizacao(n):
     return now
 
 @callback(
-Output('grafico-dispersao', 'figure'),
+    Output('grafico-dispersao', 'figure'),
     Input('store-data', 'data')
 )
 def grafico_dispersao(data):
     df = pd.DataFrame(data)
     if df.empty:
         return dash.no_update
+
     df['estados'] = df['estados'].map(dicionario_estados)
 
-    fig = px.scatter_geo(df, lon='lon', lat='lat', color='estados', title='Dispersão de Queimadas', geojson=geo_json, locations='estados', featureidkey='properties.sigla')
-    # fig.update_geos(fitbounds="locations")
-    fig.update_layout(title='Dispersão de Queimadas', showlegend=True)
+    fig = px.scatter_geo(
+        df,
+        lat='lat',
+        lon='lon',
+        color='estados',
+        title='Dispersão de Queimadas no Brasil',
+    )
+
+    fig.update_geos(
+        fitbounds="locations",
+        visible=True,
+        showcountries=True,
+        countrycolor="Black",
+        showland=True,
+        landcolor="LightGray",
+    )
+    fig.update_layout(showlegend=True)
     return fig
 
 @callback(
@@ -190,7 +194,7 @@ layout = html.Div([
     ),
     dcc.Interval(
         id='interval-component',
-        interval=0.175*60*1000,  # Atualiza a cada 10 minutos
+        interval=0.250*60*1000,  # Atualiza a cada 10 minutos (TODO: ainda nao, mas quando acabar sim)
         n_intervals=0
     ),
 ], className="pad-row")
