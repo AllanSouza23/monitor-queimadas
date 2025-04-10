@@ -5,6 +5,7 @@ import io
 import reverse_geocode
 from datetime import datetime
 from dash import html, dcc, callback, Input, Output
+import dash_bootstrap_components as dbc
 import aiohttp
 import asyncio
 import json
@@ -54,7 +55,31 @@ dicionario_estados = {
     'RONDÔNIA': 'RO', 'RORAIMA': 'RR', 'SANTA CATARINA': 'SC', 'SÃO PAULO': 'SP', 'SERGIPE': 'SE', 'TOCANTINS': 'TO'
 }
 
-async def fetch_data():
+def padroniza_dataframe(df):
+    pais = []
+    estado = []
+
+    for i, infos in df.iterrows():
+        loc = reverse_geocode.search([(infos.lat, infos.lon)])[0]
+        p = loc.get('country')
+        e = str(loc.get('state')).upper()
+        pais.append(p)
+        estado.append(e)
+
+    df = df.assign(pais=pais)
+    df = df.assign(estados=estado)
+    df = df[df['pais'] == 'Brazil']
+    df['pais'] = 'Brasil'
+    return df
+
+async def fetch_data(use_local_csv=False):
+    if use_local_csv:
+        path_teste = os.path.join(current_dir, '../local_resources/teste.csv')
+        with open(path_teste, 'r') as f:
+            data = f.read()
+        df = pd.DataFrame(pd.read_csv(io.StringIO(data)))
+        return padroniza_dataframe(df)
+
     # Obtém a data atual no formato YYYYMMDD
     dia = datetime.now().strftime('%Y%m%d')
 
@@ -68,37 +93,20 @@ async def fetch_data():
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            if response.status != 200:
+            if response.status != 200 and not use_local_csv:
                 return None
-            # data = await response.text()
-            path_teste = os.path.join(current_dir, '../local_resources/teste.csv')
-            with open(path_teste, 'r') as f:
-                data = f.read()
+            data = await response.text()
             df = pd.DataFrame(pd.read_csv(io.StringIO(data)))
-
-            pais = []
-            estado = []
-
-            for i, infos in df.iterrows():
-                loc = reverse_geocode.search([(infos.lat, infos.lon)])[0]
-                p = loc.get('country')
-                e = str(loc.get('state')).upper()
-                pais.append(p)
-                estado.append(e)
-
-            df = df.assign(pais=pais)
-            df = df.assign(estados=estado)
-            df = df[df['pais'] == 'Brazil']
-            df['pais'] = 'Brasil'
-            return df
+            return padroniza_dataframe(df)
 
 @callback(
     Output('store-data', 'data'),
     Output('dados-indisponiveis', 'displayed'),
-    Input('interval-component', 'n_intervals')
+    Input('interval-component', 'n_intervals'),
+    Input('toggle-fonte-dados', 'value')
 )
-def update_store_data(n):
-    df = asyncio.run(fetch_data())
+def update_store_data(n, use_local_csv):
+    df = asyncio.run(fetch_data(use_local_csv))
     if df is None:
         return dash.no_update, True
     return df.to_dict('records'), False
@@ -117,6 +125,8 @@ Output('grafico-dispersao', 'figure'),
 )
 def grafico_dispersao(data):
     df = pd.DataFrame(data)
+    if df.empty:
+        return dash.no_update
     df['estados'] = df['estados'].map(dicionario_estados)
 
     fig = px.scatter_geo(df, lon='lon', lat='lat', color='estados', title='Dispersão de Queimadas', geojson=geo_json, locations='estados', featureidkey='properties.sigla')
@@ -130,6 +140,8 @@ def grafico_dispersao(data):
 )
 def grafico_pizza(data):
     df = pd.DataFrame(data)
+    if df.empty:
+        return dash.no_update
     df['queimadas_estado'] = df.groupby('estados')['estados'].transform('count')
     new_df = df[['estados', 'queimadas_estado']].groupby('estados').mean().reset_index()
 
@@ -146,6 +158,12 @@ def queimadas_contagem(data):
 
 layout = html.Div([
     html.Br(),
+    dbc.Switch(
+        id='toggle-fonte-dados',
+        label='Usar CSV Local (teste.csv)',
+        value=False,
+        style={'margin-bottom': '10px'}
+    ),
     html.H2("Dados em Tempo Real"),
     html.P("Os Dados em Tempo Real buscam evidenciar focos de queimadas ativos em cada bioma e estado brasileiro, tendo o período de atualização de 10 minutos."),
     html.P(id='ultima-atualizacao'),
