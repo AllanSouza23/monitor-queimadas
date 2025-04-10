@@ -70,7 +70,10 @@ async def fetch_data():
         async with session.get(url) as response:
             if response.status != 200:
                 return None
-            data = await response.text()
+            # data = await response.text()
+            path_teste = os.path.join(current_dir, '../local_resources/teste.csv')
+            with open(path_teste, 'r') as f:
+                data = f.read()
             df = pd.DataFrame(pd.read_csv(io.StringIO(data)))
 
             pais = []
@@ -128,7 +131,7 @@ def grafico_dispersao(data):
 def grafico_pizza(data):
     df = pd.DataFrame(data)
     df['queimadas_estado'] = df.groupby('estados')['estados'].transform('count')
-    new_df = df[['estados', 'queimadas_estado']].groupby('estados').sum().reset_index()
+    new_df = df[['estados', 'queimadas_estado']].groupby('estados').mean().reset_index()
 
     new_df = new_df.sort_values(by="queimadas_estado")
     return px.pie(new_df, names='estados', values='queimadas_estado', color_discrete_sequence=px.colors.sequential.Inferno_r, title='Queimadas por Estado')
