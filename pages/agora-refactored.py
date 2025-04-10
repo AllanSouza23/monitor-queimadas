@@ -156,13 +156,24 @@ def queimadas_contagem(data):
     df = pd.DataFrame(data)
     return 'Queimadas registradas: ' + str(len(df))
 
+@callback(
+    Output('toggle-fonte-dados', 'input_class_name'),
+    Input('toggle-fonte-dados', 'value')
+)
+def highlight_toggle(ativo):
+    if ativo:
+        return 'bg-success'
+    else:
+        return 'bg-warning'
+
 layout = html.Div([
     html.Br(),
     dbc.Switch(
         id='toggle-fonte-dados',
-        label='Usar CSV Local (teste.csv)',
+        label='Usar Dados Para Testes (caso dados em tempo real estejam indisponíveis)',
         value=False,
-        style={'margin-bottom': '10px'}
+        style={'margin-bottom': '10px'},
+        input_class_name=None
     ),
     html.H2("Dados em Tempo Real"),
     html.P("Os Dados em Tempo Real buscam evidenciar focos de queimadas ativos em cada bioma e estado brasileiro, tendo o período de atualização de 10 minutos."),
