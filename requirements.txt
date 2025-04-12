@@ -10,3 +10,8 @@ schedule
 reverse-geocode
 seaborn
 scikit-learn
+aiohttp
+geopandas
+shapely
+pykml
+lxml

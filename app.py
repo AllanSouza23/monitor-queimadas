@@ -12,15 +12,15 @@ navbar = dbc.NavbarSimple(
         dbc.DropdownMenu(
             children=[
                 dbc.DropdownMenuItem("Dados Consolidados", href="/consolidado"),
-                dbc.DropdownMenuItem("Agora", href="/agora"),
-                # dbc.DropdownMenuItem("Previsão", href="/previsao"),
+                dbc.DropdownMenuItem("Agora Refactored", href="/agora"),
+                dbc.DropdownMenuItem("Teste", href="/test"),
             ],
             nav=True,
             in_navbar=True,
             label="Gráficos",
         ),
         dbc.NavItem(dbc.NavLink("Reportar Problema", href="https://github.com/AllanSouza23/monitor-queimadas/issues/new/choose")),
-        
+
     ],
     brand="Monitor Queimadas",
     brand_href="/",
@@ -31,10 +31,10 @@ navbar = dbc.NavbarSimple(
 github_url = "https://github.com/AllanSouza23/monitor-queimadas"  
 
 footer_style = {
-    'border': '1px solid #ccc',     # Add a border at the top
-    'text-align': 'center',         # Center-align the text
-    'padding': '20px',              # Add some padding for spacing
-    'background-color': '#212529'   # Set a background color
+    'border': '1px solid #ccc',
+    'text-align': 'center',
+    'padding': '20px',
+    'background-color': '#212529'
 }
 
 app.layout = html.Div(
