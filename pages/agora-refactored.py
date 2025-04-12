@@ -76,7 +76,13 @@ async def fetch_data(use_local_csv=False):
 
     dia = datetime.now().strftime('%Y%m%d')
     hora_atual = datetime.now().strftime('%H:%M')
-    momento = dicionario_horarios.get(f"{hora_atual[:4]}0", '0000')
+
+    if (int(hora_atual[4]) <= 4):
+        minutos = str(int(hora_atual[3]) - 1) + '0'
+    else:
+        minutos = str(hora_atual[3]) + '0'
+    hora_parseada = hora_atual[:3] + minutos
+    momento = dicionario_horarios.get(hora_parseada, '0000')
 
     url = f'https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/10min/focos_10min_{dia}_{momento}.csv'
 
@@ -153,7 +159,7 @@ def grafico_pizza(data):
     return px.pie(new_df, names='estados', values='queimadas_estado', color_discrete_sequence=px.colors.sequential.Inferno_r, title='Queimadas por Estado')
 
 @callback(
-    Output('queimadas-contagem', 'children'),
+    Output('queimadas-brasil-contagem', 'children'),
     Input('store-data', 'data')
 )
 def queimadas_contagem(data):
@@ -183,7 +189,7 @@ layout = html.Div([
     html.P("Os Dados em Tempo Real buscam evidenciar focos de queimadas ativos em cada bioma e estado brasileiro, tendo o período de atualização de 10 minutos."),
     html.P(id='ultima-atualizacao'),
     html.Br(),
-    html.P(id="queimadas-contagem"),
+    html.P(id="queimadas-brasil-contagem"),
     html.Br(),
     dcc.Loading([dcc.Graph(id="grafico-dispersao")], id="loading-3", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
     dcc.Loading([dcc.Graph(id="graph2")], id="loading-5", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
