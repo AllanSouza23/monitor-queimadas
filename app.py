@@ -12,15 +12,15 @@ navbar = dbc.NavbarSimple(
         dbc.DropdownMenu(
             children=[
                 dbc.DropdownMenuItem("Dados Consolidados", href="/consolidado"),
+                dbc.DropdownMenuItem("Agora Refactored", href="/agora"),
                 dbc.DropdownMenuItem("Teste", href="/test"),
-                dbc.DropdownMenuItem("Agora Refactored", href="/agora-refactored"),
             ],
             nav=True,
             in_navbar=True,
             label="Gráficos",
         ),
         dbc.NavItem(dbc.NavLink("Reportar Problema", href="https://github.com/AllanSouza23/monitor-queimadas/issues/new/choose")),
-        
+
     ],
     brand="Monitor Queimadas",
     brand_href="/",
