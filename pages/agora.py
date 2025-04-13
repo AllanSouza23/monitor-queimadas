@@ -191,8 +191,8 @@ layout = html.Div([
     html.Br(),
     html.P(id="queimadas-brasil-contagem"),
     html.Br(),
-    dcc.Loading([dcc.Graph(id="grafico-dispersao")], id="loading-3", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
-    dcc.Loading([dcc.Graph(id="graph2")], id="loading-5", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Loading([dcc.Graph(id="grafico-dispersao")], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Loading([dcc.Graph(id="graph2")], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
     dcc.Store(id='store-data'),
     dcc.ConfirmDialog(
         id='dados-indisponiveis',
