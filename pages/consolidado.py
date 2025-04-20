@@ -6,6 +6,7 @@ import os
 import dash_bootstrap_components as dbc
 from datetime import datetime, timedelta
 from dash import html, dcc, callback, Input, Output, State, no_update
+from dash.dash_table import DataTable
 
 
 dash.register_page(__name__)
@@ -139,13 +140,63 @@ def grafico_estados_mais_afetados(date1, date2, n):
                                 range_color=(0, df_final['foco_queimadas_estados'].max()),
                                 scope='south america',
                                 title=title,
-                                labels={'foco_queimadas_biomas': 'Focos de Queimadas'}
+                                labels={'foco_queimadas_estados': 'Focos de Queimadas'}
                           )
 
         fig_map.update_layout(margin={"r": 0, "t": 50, "l": 0, "b": 0})
         fig_map.update_geos(fitbounds="locations", visible=True)
         return fig_map
     return no_update
+
+@callback(
+    Output('tabela-queimadas', 'data'),
+    Input('ordenar-por', 'value'),
+    State('dia-inicio-graficos', 'date'),
+    State('dia-fim-graficos', 'date'),
+    Input('btn-consolidados', 'n_clicks')
+)
+def atualizar_tabela(ordenar_por, date1, date2, n):
+    if n:
+        data_inicio = datetime.strptime(date1, "%Y-%m-%d")
+        data_fim = datetime.strptime(date2, "%Y-%m-%d")
+        diferenca_dias = (data_fim - data_inicio).days
+        intervalo_de_dias = []
+
+        df_final = pd.DataFrame({'estado': estados, 'foco_queimadas_estados': [0] * len(estados)})
+
+        if diferenca_dias == 0:
+            intervalo_de_dias.append(data_inicio.strftime("%Y%m%d"))
+        else:
+            for dia in range(0, diferenca_dias + 1):
+                intervalo_de_dias.append((data_fim - timedelta(days=dia)).strftime("%Y%m%d"))
+
+        for dia in intervalo_de_dias:
+            url = f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
+            df = pd.read_csv(url)
+            parsed_df = pd.DataFrame(
+                {'estado': df['estado'].unique(), 'foco_queimadas_estados': df['estado'].value_counts()})
+            parsed_df.reset_index(drop=True, inplace=True)
+
+            parsed_df = parsed_df.sort_values(ascending=True, by='estado')
+            intermediario = pd.merge(parsed_df, df_final, on='estado', suffixes=('_x', '_y'), how='right')
+            intermediario = intermediario.fillna(0)
+            df_final['foco_queimadas_estados'] = intermediario['foco_queimadas_estados_x'] + intermediario[
+                'foco_queimadas_estados_y']
+
+        df_final = df_final.fillna(0)
+        df_final.rename(columns={'estado': 'Estado', 'foco_queimadas_estados': 'Número de Queimadas'}, inplace=True)
+
+        if ordenar_por == 'desc':
+            df_ordenado = df_final.sort_values(by='Número de Queimadas', ascending=False).reset_index(drop=True)
+        elif ordenar_por == 'asc':
+            df_ordenado = df_final.sort_values(by='Número de Queimadas', ascending=True).reset_index(drop=True)
+        elif ordenar_por == 'z-a':
+            df_ordenado = df_final.sort_values(by='Estado', ascending=False).reset_index(drop=True)
+        else:
+            df_ordenado = df_final.sort_values(by='Estado', ascending=True).reset_index(drop=True)
+        df_ordenado['Posição'] = df_ordenado.index + 1
+
+        return df_ordenado.to_dict('records')
 
 layout = html.Div([
     html.Br(),
@@ -169,4 +220,30 @@ layout = html.Div([
         ]),
     dcc.Loading([dcc.Graph(id="grafico-barras-biomas-consolidado")], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
     dcc.Loading([dcc.Graph(id="grafico-estados-mais-afetados")], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
+    dcc.Loading([
+        html.Br(),
+        html.H4("Tabela Dinâmica de Queimadas por Estado"),
+        dcc.Dropdown(
+            id='ordenar-por',
+            options=[
+                {'label': 'Número de Queimadas (Decrescente)', 'value': 'desc'},
+                {'label': 'Número de Queimadas (Crescente)', 'value': 'asc'},
+                {'label': 'Estados (Z-A)', 'value': 'z-a'},
+                {'label': 'Estados (A-Z)', 'value': 'a-z'}
+            ],
+            value='desc',
+            placeholder="Ordenar por...",
+            style={'margin-bottom': '10px'}
+        ),
+        DataTable(
+            id='tabela-queimadas',
+            columns=[
+                {'name': 'Posição', 'id': 'Posição'},
+                {'name': 'Estado', 'id': 'Estado'},
+                {'name': 'Número de Queimadas', 'id': 'Número de Queimadas'}
+            ],
+            style_table={'overflowX': 'auto'},
+            style_cell={'textAlign': 'center'},
+            style_header={'fontWeight': 'bold'},
+    )], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
 ], className="pad-row")
