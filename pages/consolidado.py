@@ -33,6 +33,7 @@ bioma_lista = ['Amazônia', 'Caatinga', 'Cerrado', 'Mata Atlântica', 'Pampa', '
 
 @callback(
     Output('grafico-barras-biomas-consolidado', 'figure'),
+    Output('title-grafico-barras-biomas-consolidado', 'children'),
     State('dia-inicio-graficos', 'date'),
     State('dia-fim-graficos', 'date'),
     Input('btn-consolidados', 'n_clicks')
@@ -68,28 +69,29 @@ def grafico_barras_queimadas_biomas_consolidado(date1, date2, n):
             title=f'Focos de Queimadas Registradas por Bioma de {datetime.strptime(date1, "%Y-%m-%d").strftime("%d/%m/%Y")} até {datetime.strptime(date2, "%Y-%m-%d").strftime("%d/%m/%Y")}'
         else:
             title=f'Focos de Queimadas Registradas por Bioma em {datetime.strptime(date1, "%Y-%m-%d").strftime("%d/%m/%Y")}'
+
         fig_bar = px.bar(
             df_final,
             x='bioma',
             y='foco_queimadas_biomas',
             color='foco_queimadas_biomas',
             text='foco_queimadas_biomas',
-            title=title,
             color_continuous_scale="Plasma",
             labels={'foco_queimadas_biomas': 'Focos de Queimadas', 'bioma': 'Bioma'}
         )
-        fig_bar.update_layout(margin={"r": 0, "t": 100, "l": 0, "b": 0})
 
         fig_bar.update_traces(textposition='outside')
         fig_bar.update_layout(
             xaxis_title="Biomas",
             yaxis_title="Número de Focos",
+            margin={"r": 0, "t": 100, "l": 0, "b": 0}
         )
-        return fig_bar
+        return fig_bar, title
     return no_update
 
 @callback(
     Output('grafico-estados-mais-afetados', 'figure'),
+    Output('title-grafico-estados-mais-afetados', 'children'),
     State('dia-inicio-graficos', 'date'),
     State('dia-fim-graficos', 'date'),
     Input('btn-consolidados', 'n_clicks')
@@ -139,17 +141,17 @@ def grafico_estados_mais_afetados(date1, date2, n):
                                 color_continuous_scale="Plasma",
                                 range_color=(0, df_final['foco_queimadas_estados'].max()),
                                 scope='south america',
-                                title=title,
                                 labels={'foco_queimadas_estados': 'Focos de Queimadas'}
                           )
 
         fig_map.update_layout(margin={"r": 0, "t": 50, "l": 0, "b": 0})
         fig_map.update_geos(fitbounds="locations", visible=True)
-        return fig_map
+        return fig_map, title
     return no_update
 
 @callback(
     Output('tabela-queimadas', 'data'),
+    Output('title-tabela-dinamica-estados', 'children'),
     Input('ordenar-por', 'value'),
     State('dia-inicio-graficos', 'date'),
     State('dia-fim-graficos', 'date'),
@@ -186,6 +188,11 @@ def atualizar_tabela(ordenar_por, date1, date2, n):
         df_final = df_final.fillna(0)
         df_final.rename(columns={'estado': 'Estado', 'foco_queimadas_estados': 'Número de Queimadas'}, inplace=True)
 
+        if len(intervalo_de_dias) > 1:
+            title = f"Tabela Dinâmica de Queimadas por Estado entre {data_inicio.strftime('%d/%m/%Y')} e {data_fim.strftime('%d/%m/%Y')}"
+        else:
+            title = f"Tabela Dinâmica de Queimadas por Estado em {data_inicio.strftime('%d/%m/%Y')}"
+
         if ordenar_por == 'desc':
             df_ordenado = df_final.sort_values(by='Número de Queimadas', ascending=False).reset_index(drop=True)
         elif ordenar_por == 'asc':
@@ -196,7 +203,8 @@ def atualizar_tabela(ordenar_por, date1, date2, n):
             df_ordenado = df_final.sort_values(by='Estado', ascending=True).reset_index(drop=True)
         df_ordenado['Posição'] = df_ordenado.index + 1
 
-        return df_ordenado.to_dict('records')
+        return df_ordenado.to_dict('records'), title
+    return no_update
 
 layout = html.Div([
     html.Br(),
@@ -218,11 +226,22 @@ layout = html.Div([
             html.Button("Gerar Gráficos", id="btn-consolidados"),
         ], width="auto"),
         ]),
-    dcc.Loading([dcc.Graph(id="grafico-barras-biomas-consolidado")], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
-    dcc.Loading([dcc.Graph(id="grafico-estados-mais-afetados")], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
     dcc.Loading([
         html.Br(),
-        html.H4("Tabela Dinâmica de Queimadas por Estado"),
+        html.H4(id="title-grafico-barras-biomas-consolidado", style={"textAlign": "center"}),
+        dcc.Graph(id="grafico-barras-biomas-consolidado")
+    ], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
+    dcc.Loading([
+            html.Br(),
+            html.H4(id="title-grafico-estados-mais-afetados", style={"textAlign": "center"}),
+            dcc.Graph(id="grafico-estados-mais-afetados")
+        ],
+        id="loading-1",
+        type="circle",
+        overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
+    dcc.Loading([
+        html.Br(),
+        html.H4(id="title-tabela-dinamica-estados", style={"textAlign": "center"}),
         dcc.Dropdown(
             id='ordenar-por',
             options=[
@@ -247,3 +266,4 @@ layout = html.Div([
             style_header={'fontWeight': 'bold'},
     )], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
 ], className="pad-row")
+
