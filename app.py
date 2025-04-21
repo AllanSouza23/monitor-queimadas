@@ -11,9 +11,9 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(dbc.NavLink("Papel da COP", href="/cop")),
         dbc.DropdownMenu(
             children=[
-                dbc.DropdownMenuItem("Dados Consolidados", href="/consolidado"),
-                dbc.DropdownMenuItem("Agora Refactored", href="/agora"),
-                dbc.DropdownMenuItem("Teste", href="/test"),
+                dbc.DropdownMenuItem("Agora", href="/agora", external_link=True),
+                dbc.DropdownMenuItem("Dados Consolidados", href="/consolidado", external_link=True),
+                dbc.DropdownMenuItem("Teste", href="/test", external_link=True),
             ],
             nav=True,
             in_navbar=True,

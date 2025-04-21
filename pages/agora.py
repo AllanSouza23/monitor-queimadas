@@ -7,6 +7,7 @@ from datetime import datetime
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 import aiohttp
+import json
 import asyncio
 import os
 
@@ -131,21 +132,24 @@ def grafico_dispersao(data):
         lon='lon',
         color='estados',
         title='Dispersão de Queimadas no Brasil',
+        scope="south america",
     )
 
     fig.update_geos(
-        fitbounds="locations",
         visible=True,
         showcountries=True,
         countrycolor="Black",
         showland=True,
         landcolor="LightGray",
+        lataxis_range=[-35, 5],
+        lonaxis_range=[-75, -30],
     )
-    fig.update_layout(showlegend=True)
+    fig.update_layout(showlegend=True, margin={"r": 0, "t": 50, "l": 0, "b": 0,})
+
     return fig
 
 @callback(
-    Output('graph2', 'figure'),
+    Output('grafico-pizza-estados', 'figure'),
     Input('store-data', 'data')
 )
 def grafico_pizza(data):
@@ -156,7 +160,7 @@ def grafico_pizza(data):
     new_df = df[['estados', 'queimadas_estado']].groupby('estados').mean().reset_index()
 
     new_df = new_df.sort_values(by="queimadas_estado")
-    return px.pie(new_df, names='estados', values='queimadas_estado', color_discrete_sequence=px.colors.sequential.Inferno_r, title='Queimadas por Estado')
+    return px.pie(new_df, names='estados', values='queimadas_estado', color_discrete_sequence=px.colors.sequential.Plasma_r, title='Queimadas por Estado')
 
 @callback(
     Output('queimadas-brasil-contagem', 'children'),
@@ -191,8 +195,8 @@ layout = html.Div([
     html.Br(),
     html.P(id="queimadas-brasil-contagem"),
     html.Br(),
-    dcc.Loading([dcc.Graph(id="grafico-dispersao")], id="loading-3", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
-    dcc.Loading([dcc.Graph(id="graph2")], id="loading-5", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white"}),
+    dcc.Loading([dcc.Graph(id="grafico-dispersao")], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"},),
+    dcc.Loading([dcc.Graph(id="grafico-pizza-estados")], id="loading-2", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
     dcc.Store(id='store-data'),
     dcc.ConfirmDialog(
         id='dados-indisponiveis',
@@ -200,7 +204,7 @@ layout = html.Div([
     ),
     dcc.Interval(
         id='interval-component',
-        interval=0.250*60*1000,  # Atualiza a cada 10 minutos (TODO: ainda nao, mas quando acabar sim)
+        interval=0.25*60*1000,  # Atualiza a cada 10 minutos (TODO: ainda nao, mas quando acabar sim)
         n_intervals=0
     ),
 ], className="pad-row")
