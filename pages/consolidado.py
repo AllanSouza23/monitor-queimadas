@@ -161,7 +161,6 @@ def grafico_estados_mais_afetados(date1, date2, n):
         parsed_df = pd.DataFrame(
             {'estado': df['estado'].unique(), 'foco_queimadas_estados': df['estado'].value_counts()})
         parsed_df.reset_index(drop=True, inplace=True)
-        # print(parsed_df)
         parsed_df = parsed_df.sort_values(ascending=True, by='estado')
         intermediario = pd.merge(parsed_df, df_final, on='estado', suffixes=('_x', '_y'), how='right')
         intermediario = intermediario.fillna(0)
