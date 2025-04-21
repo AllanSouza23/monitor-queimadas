@@ -68,7 +68,7 @@ def padroniza_dataframe(df):
 
 async def fetch_data(use_local_csv=False):
     if use_local_csv:
-        path_teste = os.path.join(current_dir, '../local_resources/teste.csv')
+        path_teste = os.path.join(current_dir, '../resources/teste.csv')
         with open(path_teste, 'r') as f:
             data = f.read()
         df = pd.DataFrame(pd.read_csv(io.StringIO(data)))
