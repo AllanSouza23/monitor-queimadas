@@ -7,7 +7,6 @@ from datetime import datetime
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 import aiohttp
-import json
 import asyncio
 import os
 
