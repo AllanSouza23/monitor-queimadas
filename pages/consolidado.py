@@ -3,6 +3,9 @@ import pandas as pd
 import plotly.express as px
 import json
 import os
+import io
+import aiohttp
+import asyncio
 import dash_bootstrap_components as dbc
 from datetime import datetime, timedelta
 from dash import html, dcc, callback, Input, Output, State, no_update
@@ -31,6 +34,43 @@ dicionario_estados = {
 
 bioma_lista = ['Amazônia', 'Caatinga', 'Cerrado', 'Mata Atlântica', 'Pampa', 'Pantanal']
 
+
+async def fetch_interval_data(intervalo_dias):
+    data = []
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+        for dia in intervalo_dias:
+            url = f'https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv'
+            for attempt in range(3):
+                try:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            csv_data = await response.text()
+                            df = pd.DataFrame(pd.read_csv(io.StringIO(csv_data)))
+                            df['dia'] = dia
+                            data.append(df)
+                        break
+                except asyncio.TimeoutError:
+                    if attempt == 2:
+                        print(f"Timeout ao acessar {url}")
+    df = pd.DataFrame()
+    for d in data:
+        df = pd.concat([df, d], ignore_index=True)
+
+    return df
+
+async def fetch_data_consolidados(urls):
+    async with aiohttp.ClientSession() as session:
+        tasks = [session.get(url) for url in urls]
+        responses = await asyncio.gather(*tasks)
+
+        dataframes = []
+        for response in responses:
+            if response.status == 200:
+                data = await response.text()
+                df = pd.read_csv(io.StringIO(data))
+                dataframes.append(df)
+        return dataframes
+
 @callback(
     Output('grafico-barras-biomas-consolidado', 'figure'),
     Output('title-grafico-barras-biomas-consolidado', 'children'),
@@ -53,10 +93,15 @@ def grafico_barras_queimadas_biomas_consolidado(date1, date2, n):
             for dia in range(0, diferenca_dias + 1):
                 intervalo_de_dias.append((data_fim - timedelta(days=dia)).strftime("%Y%m%d"))
 
-        for dia in intervalo_de_dias:
-            url = f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
-            df = pd.read_csv(url)
-            parsed_df = pd.DataFrame({'bioma': df['bioma'].unique(), 'foco_queimadas_biomas':  df['bioma'].value_counts()})
+        urls = [
+            f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
+            for dia in intervalo_de_dias
+        ]
+        dataframes = asyncio.run(fetch_data_consolidados(urls))
+
+        for df in dataframes:
+            parsed_df = pd.DataFrame(
+                {'bioma': df['bioma'].unique(), 'foco_queimadas_biomas': df['bioma'].value_counts()})
             parsed_df.reset_index(drop=True, inplace=True)
 
             parsed_df = parsed_df.sort_values(ascending=True, by='bioma')
@@ -111,18 +156,16 @@ def grafico_estados_mais_afetados(date1, date2, n):
             for dia in range(0, diferenca_dias + 1):
                 intervalo_de_dias.append((data_fim - timedelta(days=dia)).strftime("%Y%m%d"))
 
-        for dia in intervalo_de_dias:
-            url = f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
-            df = pd.read_csv(url)
-            parsed_df = pd.DataFrame(
-                {'estado': df['estado'].unique(), 'foco_queimadas_estados': df['estado'].value_counts()})
-            parsed_df.reset_index(drop=True, inplace=True)
+        df = asyncio.run(fetch_interval_data(intervalo_de_dias))
 
-            parsed_df = parsed_df.sort_values(ascending=True, by='estado')
-            intermediario = pd.merge(parsed_df, df_final, on='estado', suffixes=('_x', '_y'), how='right')
-            intermediario = intermediario.fillna(0)
-            df_final['foco_queimadas_estados'] = intermediario['foco_queimadas_estados_x'] + intermediario[
-                'foco_queimadas_estados_y']
+        parsed_df = pd.DataFrame(
+            {'estado': df['estado'].unique(), 'foco_queimadas_estados': df['estado'].value_counts()})
+        parsed_df.reset_index(drop=True, inplace=True)
+        # print(parsed_df)
+        parsed_df = parsed_df.sort_values(ascending=True, by='estado')
+        intermediario = pd.merge(parsed_df, df_final, on='estado', suffixes=('_x', '_y'), how='right')
+        intermediario = intermediario.fillna(0)
+        df_final['foco_queimadas_estados'] = intermediario['foco_queimadas_estados_x'] + intermediario['foco_queimadas_estados_y']
 
         df_final = df_final.fillna(0)
         df_final['estado'] = df_final['estado'].map(dicionario_estados)
@@ -130,7 +173,7 @@ def grafico_estados_mais_afetados(date1, date2, n):
         title = f"Estados mais afetados pelas queimadas de {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}" \
             if len(intervalo_de_dias) > 1 else f"Estados mais afetados pelas queimadas em {data_inicio.strftime('%d/%m/%Y')}"
 
-        path_geojson = os.path.join(current_dir, '../local_resources/old_brasil_estados.json')
+        path_geojson = os.path.join(current_dir, '../resources/brasil_estados.json')
 
         with open(path_geojson, 'r') as f:
             geojson = json.load(f)
@@ -177,18 +220,16 @@ def atualizar_tabela(ordenar_por, date1, date2, n):
             for dia in range(0, diferenca_dias + 1):
                 intervalo_de_dias.append((data_fim - timedelta(days=dia)).strftime("%Y%m%d"))
 
-        for dia in intervalo_de_dias:
-            url = f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
-            df = pd.read_csv(url)
-            parsed_df = pd.DataFrame(
-                {'estado': df['estado'].unique(), 'foco_queimadas_estados': df['estado'].value_counts()})
-            parsed_df.reset_index(drop=True, inplace=True)
+        df = asyncio.run(fetch_interval_data(intervalo_de_dias))
 
-            parsed_df = parsed_df.sort_values(ascending=True, by='estado')
-            intermediario = pd.merge(parsed_df, df_final, on='estado', suffixes=('_x', '_y'), how='right')
-            intermediario = intermediario.fillna(0)
-            df_final['foco_queimadas_estados'] = intermediario['foco_queimadas_estados_x'] + intermediario[
-                'foco_queimadas_estados_y']
+        parsed_df = pd.DataFrame(
+            {'estado': df['estado'].unique(), 'foco_queimadas_estados': df['estado'].value_counts()})
+        parsed_df.reset_index(drop=True, inplace=True)
+
+        parsed_df = parsed_df.sort_values(ascending=True, by='estado')
+        intermediario = pd.merge(parsed_df, df_final, on='estado', suffixes=('_x', '_y'), how='right')
+        intermediario = intermediario.fillna(0)
+        df_final['foco_queimadas_estados'] = intermediario['foco_queimadas_estados_x'] + intermediario['foco_queimadas_estados_y']
 
         df_final = df_final.fillna(0)
         df_final.rename(columns={'estado': 'Estado', 'foco_queimadas_estados': 'Número de Queimadas'}, inplace=True)
@@ -231,14 +272,13 @@ def grafico_linha_queimadas(date1, date2, n):
             for dia in range(0, diferenca_dias + 1):
                 intervalo_de_dias.append((data_fim - timedelta(days=dia)).strftime("%Y%m%d"))
 
-        total_queimadas_por_dia = []
+        dataframes = pd.DataFrame(asyncio.run(fetch_interval_data(intervalo_de_dias)))
 
-        for dia in intervalo_de_dias:
-            url = f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
-            df = pd.read_csv(url)
-            total_queimadas_por_dia.append({'dia': dia, 'total_queimadas': len(df)})
+        df_final = dataframes.groupby('dia').size().reset_index(name='total_queimadas')
 
-        df_final = pd.DataFrame(total_queimadas_por_dia)
+        # total_queimadas_por_dia.append({'dia': intervalo_de_dias[index], 'total_queimadas': len(dataframes[index])})
+
+        # df_final = pd.DataFrame(total_queimadas_por_dia)
         df_final['dia'] = pd.to_datetime(df_final['dia'], format='%Y%m%d')
 
         title = f"Variação de Queimadas de {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}" \
