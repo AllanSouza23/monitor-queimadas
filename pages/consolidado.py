@@ -208,40 +208,41 @@ def atualizar_tabela(ordenar_por, date1, date2, n):
 
 layout = html.Div([
     html.Br(),
-    html.H2("Dados Consolidados"),
-    html.P("Os Dados Consolidados tratam-se de um conjunto de dados vindos dos registros do BDQueimadas, a fim de melhor visualizar dentro do intervalo máximo de aproximadamente um mês, quais os biomas e estados mais afetados por focos de queimadas"),
-    html.Br(),
-    dbc.Col(html.B("Selecione um intervalo para visualização"), style={"margin-bottom": "0.5em"}),
+    html.H2("Dados Consolidados", style={"textAlign": "center", "margin-bottom": "20px"}),
+    html.P(
+        "Os Dados Consolidados tratam-se de um conjunto de dados vindos dos registros do BDQueimadas, "
+        "a fim de melhor visualizar dentro do intervalo máximo de aproximadamente um mês, quais os biomas e estados "
+        "mais afetados por focos de queimadas.",
+        style={"textAlign": "center", "margin-bottom": "30px"}
+    ),
     html.Br(),
     dbc.Row([
+        dbc.Col(html.B("Selecione um intervalo para visualização"), width=12, style={"textAlign": "center", "margin-bottom": "10px"}),
         dbc.Col([
             html.B("Data de início: "),
             dcc.DatePickerSingle(id='dia-inicio-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY")
-            ], width="auto"),
+        ], width=4, style={"textAlign": "center"}),
         dbc.Col([
             html.B("Data de fim: "),
             dcc.DatePickerSingle(id='dia-fim-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY")
-            ], width="auto"),
+        ], width=4, style={"textAlign": "center"}),
         dbc.Col([
-            html.Button("Gerar Gráficos", id="btn-consolidados"),
-        ], width="auto"),
-        ]),
+            dbc.Button("Gerar Gráficos", id="btn-consolidados", color="primary", className="mt-1")
+        ], width=4, style={"textAlign": "center"}),
+    ], justify="center", style={"margin-bottom": "30px"}),
     dcc.Loading([
         html.Br(),
-        html.H4(id="title-grafico-barras-biomas-consolidado", style={"textAlign": "center"}),
-        dcc.Graph(id="grafico-barras-biomas-consolidado")
-    ], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
-    dcc.Loading([
-            html.Br(),
-            html.H4(id="title-grafico-estados-mais-afetados", style={"textAlign": "center"}),
-            dcc.Graph(id="grafico-estados-mais-afetados")
-        ],
-        id="loading-1",
-        type="circle",
-        overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
+        html.H4(id="title-grafico-barras-biomas-consolidado", style={"textAlign": "center", "margin-bottom": "20px"}),
+        dcc.Graph(id="grafico-barras-biomas-consolidado", style={"margin-bottom": "30px"})
+    ], id="loading-1", type="circle"),
     dcc.Loading([
         html.Br(),
-        html.H4(id="title-tabela-dinamica-estados", style={"textAlign": "center"}),
+        html.H4(id="title-grafico-estados-mais-afetados", style={"textAlign": "center", "margin-bottom": "20px"}),
+        dcc.Graph(id="grafico-estados-mais-afetados", style={"margin-bottom": "30px"})
+    ], id="loading-2", type="circle"),
+    dcc.Loading([
+        html.Br(),
+        html.H4(id="title-tabela-dinamica-estados", style={"textAlign": "center", "margin-bottom": "20px"}),
         dcc.Dropdown(
             id='ordenar-por',
             options=[
@@ -252,7 +253,7 @@ layout = html.Div([
             ],
             value='desc',
             placeholder="Ordenar por...",
-            style={'margin-bottom': '10px'}
+            style={'margin-bottom': '10px', "width": "60%"}
         ),
         DataTable(
             id='tabela-queimadas',
@@ -262,8 +263,10 @@ layout = html.Div([
                 {'name': 'Número de Queimadas', 'id': 'Número de Queimadas'}
             ],
             style_table={'overflowX': 'auto'},
-            style_cell={'textAlign': 'center'},
-            style_header={'fontWeight': 'bold'},
-    )], id="loading-1", type="circle", overlay_style={"visibility":"visible", "opacity": .5, "backgroundColor": "white", "filter": "blur(2px)"}),
-], className="pad-row")
+            style_cell={'textAlign': 'center', 'padding': '10px'},
+            style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
+            style_data={'backgroundColor': '#ffffff', 'border': '1px solid #dee2e6'},
+        )
+    ], id="loading-3", type="circle"),
+], className="pad-row", style={"padding": "20px"})
 
