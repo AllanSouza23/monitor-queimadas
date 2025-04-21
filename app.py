@@ -13,14 +13,13 @@ navbar = dbc.NavbarSimple(
             children=[
                 dbc.DropdownMenuItem("Agora", href="/agora", external_link=True),
                 dbc.DropdownMenuItem("Dados Consolidados", href="/consolidado", external_link=True),
-                dbc.DropdownMenuItem("Teste", href="/test", external_link=True),
+                # dbc.DropdownMenuItem("Teste", href="/test", external_link=True),
             ],
             nav=True,
             in_navbar=True,
             label="Gráficos",
         ),
         dbc.NavItem(dbc.NavLink("Reportar Problema", href="https://github.com/AllanSouza23/monitor-queimadas/issues/new/choose")),
-
     ],
     brand="Monitor Queimadas",
     brand_href="/",
@@ -64,4 +63,4 @@ app.layout = html.Div(
 ])
 
 if __name__ == '__main__':
-    app.run(debug=True, dev_tools_serve_dev_bundles=True)
+    app.run()
