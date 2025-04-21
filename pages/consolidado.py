@@ -59,16 +59,22 @@ async def fetch_interval_data(intervalo_dias):
     return df
 
 async def fetch_data_consolidados(urls):
-    async with aiohttp.ClientSession() as session:
-        tasks = [session.get(url) for url in urls]
-        responses = await asyncio.gather(*tasks)
-
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         dataframes = []
-        for response in responses:
-            if response.status == 200:
-                data = await response.text()
-                df = pd.read_csv(io.StringIO(data))
-                dataframes.append(df)
+
+        for url in urls:
+            for attempt in range(3):
+                try:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            csv_data = await response.text()
+                            df = pd.read_csv(io.StringIO(csv_data))
+                            dataframes.append(df)
+                        break
+                except asyncio.TimeoutError:
+                    if attempt == 2:
+                        print(f"Timeout ao acessar {url}")
+
         return dataframes
 
 @callback(
