@@ -130,7 +130,7 @@ def grafico_estados_mais_afetados(date1, date2, n):
         title = f"Estados mais afetados pelas queimadas de {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}" \
             if len(intervalo_de_dias) > 1 else f"Estados mais afetados pelas queimadas em {data_inicio.strftime('%d/%m/%Y')}"
 
-        path_geojson = os.path.join(current_dir, '../local_resources/old_brasil_estados.json')
+        path_geojson = os.path.join(current_dir, '../local_resources/brasil_estados.json')
 
         with open(path_geojson, 'r') as f:
             geojson = json.load(f)
