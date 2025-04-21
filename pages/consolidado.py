@@ -145,7 +145,12 @@ def grafico_estados_mais_afetados(date1, date2, n):
                           )
 
         fig_map.update_layout(margin={"r": 0, "t": 50, "l": 0, "b": 0})
-        fig_map.update_geos(fitbounds="locations", visible=True)
+        fig_map.update_geos(
+            fitbounds="locations",
+            visible=True,
+            lataxis_range=[-35, 5],
+            lonaxis_range=[-75, -30],
+        )
         return fig_map, title
     return no_update
 
@@ -285,17 +290,17 @@ layout = html.Div([
         html.Br(),
         html.H4(id="title-grafico-barras-biomas-consolidado", style={"textAlign": "center", "margin-bottom": "20px"}),
         dcc.Graph(id="grafico-barras-biomas-consolidado", style={"margin-bottom": "30px"})
-    ], id="loading-1", type="circle"),
+    ], id="loading-3", type="circle"),
     dcc.Loading([
         html.Br(),
         html.H4(id="title-grafico-estados-mais-afetados", style={"textAlign": "center", "margin-bottom": "20px"}),
         dcc.Graph(id="grafico-estados-mais-afetados", style={"margin-bottom": "30px"})
-    ], id="loading-2", type="circle"),
+    ], id="loading-4", type="circle"),
     dcc.Loading([
         html.Br(),
         html.H4(id="title-grafico-linha-queimadas", style={"textAlign": "center", "margin-bottom": "20px"}),
         dcc.Graph(id="grafico-linha-queimadas", style={"margin-bottom": "30px"})
-    ], id="loading-3", type="circle"),
+    ], id="loading-5", type="circle"),
     dcc.Loading([
         html.Br(),
         html.H4(id="title-tabela-dinamica-estados", style={"textAlign": "center", "margin-bottom": "20px"}),
@@ -323,5 +328,5 @@ layout = html.Div([
             style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
             style_data={'backgroundColor': '#ffffff', 'border': '1px solid #dee2e6'},
         )
-    ], id="loading-4", type="circle"),
+    ], id="loading-6", type="circle"),
 ], className="pad-row", style={"padding": "20px"})
