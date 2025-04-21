@@ -206,6 +206,57 @@ def atualizar_tabela(ordenar_por, date1, date2, n):
         return df_ordenado.to_dict('records'), title
     return no_update
 
+@callback(
+    Output('grafico-linha-queimadas', 'figure'),
+    Output('title-grafico-linha-queimadas', 'children'),
+    State('dia-inicio-graficos', 'date'),
+    State('dia-fim-graficos', 'date'),
+    Input('btn-consolidados', 'n_clicks')
+)
+def grafico_linha_queimadas(date1, date2, n):
+    if n:
+        data_inicio = datetime.strptime(date1, "%Y-%m-%d")
+        data_fim = datetime.strptime(date2, "%Y-%m-%d")
+        diferenca_dias = (data_fim - data_inicio).days
+        intervalo_de_dias = []
+
+        if diferenca_dias == 0:
+            intervalo_de_dias.append(data_inicio.strftime("%Y%m%d"))
+        else:
+            for dia in range(0, diferenca_dias + 1):
+                intervalo_de_dias.append((data_fim - timedelta(days=dia)).strftime("%Y%m%d"))
+
+        total_queimadas_por_dia = []
+
+        for dia in intervalo_de_dias:
+            url = f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
+            df = pd.read_csv(url)
+            total_queimadas_por_dia.append({'dia': dia, 'total_queimadas': len(df)})
+
+        df_final = pd.DataFrame(total_queimadas_por_dia)
+        df_final['dia'] = pd.to_datetime(df_final['dia'], format='%Y%m%d')
+
+        title = f"Variação de Queimadas de {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}" \
+            if len(intervalo_de_dias) > 1 else f"Variação de Queimadas em {data_inicio.strftime('%d/%m/%Y')}"
+
+        fig_line = px.line(
+            df_final,
+            x='dia',
+            y='total_queimadas',
+            labels={'dia': 'Intervalo de Dias', 'total_queimadas': 'Total de Queimadas'},
+            markers=True
+        )
+
+        fig_line.update_xaxes(dtick="D1", tickformat="%d/%m")
+        fig_line.update_layout(
+            xaxis_title="Dia",
+            yaxis_title="Total de Queimadas",
+            margin={"r": 0, "t": 50, "l": 0, "b": 0}
+        )
+
+        return fig_line, title
+    return no_update
+
 layout = html.Div([
     html.Br(),
     html.H2("Dados Consolidados", style={"textAlign": "center", "margin-bottom": "20px"}),
@@ -242,6 +293,11 @@ layout = html.Div([
     ], id="loading-2", type="circle"),
     dcc.Loading([
         html.Br(),
+        html.H4(id="title-grafico-linha-queimadas", style={"textAlign": "center", "margin-bottom": "20px"}),
+        dcc.Graph(id="grafico-linha-queimadas", style={"margin-bottom": "30px"})
+    ], id="loading-3", type="circle"),
+    dcc.Loading([
+        html.Br(),
         html.H4(id="title-tabela-dinamica-estados", style={"textAlign": "center", "margin-bottom": "20px"}),
         dcc.Dropdown(
             id='ordenar-por',
@@ -267,6 +323,5 @@ layout = html.Div([
             style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
             style_data={'backgroundColor': '#ffffff', 'border': '1px solid #dee2e6'},
         )
-    ], id="loading-3", type="circle"),
+    ], id="loading-4", type="circle"),
 ], className="pad-row", style={"padding": "20px"})
-
