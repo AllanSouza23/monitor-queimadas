@@ -7,17 +7,17 @@ dash.register_page(__name__, path='/')
 
 about = '''
         Este projeto destina-se a auxiliar a visualização de como as queimadas vem avançando no Brasil,
-        criando gráficos que utilizam como fonte a base de dados BDQueimadas. 
+        criando gráficos que utilizam como fonte a base de dados disponibilizadas pelo INPE. 
         '''
 how =   '''
-        Através de requisições HTTP à base de dados, o monitor recupera informações coletadas pelos
-        satélites que atuam como sensores dispostos na área espacial do país, onde transmite dados sobre
-        focos de queimadas ativos, biomas afetados, estados com mais incidência, entre outros. 
+        Através de requisições e consulta à base de dados, o monitor recupera informações coletadas pelos
+        satélites que atuam como sensores dispostos na área espacial do país, e transmite dados sobre
+        focos de queimadas ativos, biomas afetados e estados com maior incidência. 
         '''
 
 issues = f'''
-         Caso ao navegar por este portal você tenha encontrado qualquer problema, inconsistência ou informação
-         faltando, por favor não deixe de registrar clicando em Reportar Problema na barra superior.
+         Caso ao navegar por este app você tenha encontrado qualquer problema, inconsistência ou informação
+         faltando, por favor registre clicando em Reportar Problema na barra superior.
          '''
 
 card_cop = dbc.Card(
@@ -88,14 +88,23 @@ card_agora = dbc.Card(
     style={"width": "18rem"},
 )
 
-
-
 layout = html.Div([
         html.Br(),
         html.H1('Seja bem-vindo ao Monitor Queimadas!'),
         html.Br(),
-        dbc.Row(
-        [dbc.Col(card_mudancas), dbc.Col(card_cop), dbc.Col(card_consolidado), dbc.Col(card_agora)],
+        dbc.Container(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(card_mudancas, md=6, lg=3),
+                        dbc.Col(card_cop, md=6, lg=3),
+                        dbc.Col(card_agora, md=6, lg=3),
+                        dbc.Col(card_consolidado, md=6, lg=3),
+                    ],
+                    justify="center",
+                    className="mb-4",
+                )
+            ]
         ),
         html.Br(),
         html.Div([
@@ -104,6 +113,6 @@ layout = html.Div([
                                                  children=about)], active_item=True),
                 dbc.Accordion([dbc.AccordionItem(title="Como funciona?", children=how)], active_item=True),
                 dbc.Accordion([dbc.AccordionItem(title="Encontrou algum problema?", children=issues)], active_item=True),
-        
+
         ]),
 ])
