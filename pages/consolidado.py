@@ -106,8 +106,13 @@ def grafico_barras_queimadas_biomas_consolidado(date1, date2, n):
         dataframes = asyncio.run(fetch_data_consolidados(urls))
 
         for df in dataframes:
-            parsed_df = pd.DataFrame(
-                {'bioma': df['bioma'].unique(), 'foco_queimadas_biomas': df['bioma'].value_counts()})
+            biomas = df['bioma'].unique()
+            bioma_final = []
+            for b in biomas:
+                if b  in bioma_lista:
+                    bioma_final.append(b)
+            contagem_biomas = df['bioma'].value_counts()
+            parsed_df = pd.DataFrame({'bioma': bioma_final, 'foco_queimadas_biomas': contagem_biomas})
             parsed_df.reset_index(drop=True, inplace=True)
 
             parsed_df = parsed_df.sort_values(ascending=True, by='bioma')
