@@ -286,27 +286,36 @@ def grafico_linha_queimadas(date1, date2, n):
 
         df_final = dataframes.groupby('dia').size().reset_index(name='total_queimadas')
 
-        # total_queimadas_por_dia.append({'dia': intervalo_de_dias[index], 'total_queimadas': len(dataframes[index])})
-
-        # df_final = pd.DataFrame(total_queimadas_por_dia)
         df_final['dia'] = pd.to_datetime(df_final['dia'], format='%Y%m%d')
 
         title = f"Variação de Queimadas de {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}" \
             if len(intervalo_de_dias) > 1 else f"Variação de Queimadas em {data_inicio.strftime('%d/%m/%Y')}"
 
+        media = df_final['total_queimadas'].mean().round().astype(int)
+        df_final['media'] = media
+
         fig_line = px.line(
             df_final,
             x='dia',
             y='total_queimadas',
-            labels={'dia': 'Intervalo de Dias', 'total_queimadas': 'Total de Queimadas'},
-            markers=True
+            labels={'dia': 'Dia', 'total_queimadas': 'Total de Queimadas'},
+            markers=True,
+        )
+
+        fig_line.add_scatter(
+            x=df_final['dia'],
+            y=df_final['media'],
+            mode='lines',
+            line=dict(color='red', width=2, dash='dash'),
+            name='Média',
+            hovertemplate=f"Média: {media}<extra></extra>",
         )
 
         fig_line.update_xaxes(dtick="D1", tickformat="%d/%m")
         fig_line.update_layout(
             xaxis_title="Dia",
             yaxis_title="Total de Queimadas",
-            margin={"r": 0, "t": 50, "l": 0, "b": 0}
+            margin={"r": 0, "t": 50, "l": 0, "b": 0},
         )
 
         return fig_line, title
