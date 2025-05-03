@@ -38,20 +38,43 @@ bioma_lista = ['Amazônia', 'Caatinga', 'Cerrado', 'Mata Atlântica', 'Pampa', '
 async def fetch_interval_data(intervalo_dias):
     data = []
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-        for dia in intervalo_dias:
-            url = f'https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv'
-            for attempt in range(3):
-                try:
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            csv_data = await response.text()
-                            df = pd.DataFrame(pd.read_csv(io.StringIO(csv_data)))
-                            df['dia'] = dia
-                            data.append(df)
-                        break
-                except asyncio.TimeoutError:
-                    if attempt == 2:
-                        print(f"Timeout ao acessar {url}")
+        if len(intervalo_dias) > 2:
+            data_inicio = intervalo_dias[-1]
+            data_fim = intervalo_dias[0]
+            intervalo_meses = pd.date_range(pd.to_datetime(data_inicio), pd.to_datetime(data_fim), inclusive='both').strftime('%Y%m').unique().tolist()
+
+            for mes in intervalo_meses:
+                url = f'https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/mensal/Brasil/focos_mensal_br_{mes}.csv'
+                for attempt in range(3):
+                    try:
+                        async with session.get(url) as response:
+                            if response.status == 200:
+                                csv_data = await response.text()
+                                df = pd.DataFrame(pd.read_csv(io.StringIO(csv_data)))
+                                df['mes'] = mes
+                                df['dia'] = pd.to_datetime(df['data_hora_gmt']).dt.strftime('%Y%m%d')
+                                df = df[df['dia'].isin(intervalo_dias)]
+                                data.append(df)
+                            break
+                    except asyncio.TimeoutError:
+                        if attempt == 2:
+                            print(f"Timeout ao acessar {url}")
+        else:
+            for dia in intervalo_dias:
+                url = f'https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv'
+                for attempt in range(3):
+                    try:
+                        async with session.get(url) as response:
+                            if response.status == 200:
+                                csv_data = await response.text()
+                                df = pd.DataFrame(pd.read_csv(io.StringIO(csv_data)))
+                                df['dia'] = dia
+                                data.append(df)
+                            break
+                    except asyncio.TimeoutError:
+                        if attempt == 2:
+                            print(f"Timeout ao acessar {url}")
+
     df = pd.DataFrame()
     for d in data:
         df = pd.concat([df, d], ignore_index=True)

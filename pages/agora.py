@@ -132,6 +132,7 @@ def grafico_dispersao(data):
         color='estados',
         title='Dispersão de Queimadas no Brasil',
         scope="south america",
+        labels={'estados': 'Estado', 'lat': 'Latitude', 'lon': 'Longitude'},
     )
 
     fig.update_geos(
