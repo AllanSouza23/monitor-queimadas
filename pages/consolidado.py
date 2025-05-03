@@ -334,7 +334,12 @@ def grafico_linha_queimadas(date1, date2, n):
             hovertemplate=f"Média: {media}<extra></extra>",
         )
 
-        fig_line.update_xaxes(dtick="D1", tickformat="%d/%m")
+        fig_line.update_xaxes(
+            dtick="D1",
+            tickformat="%d/%m",
+            range=[df_final['dia'].min(), df_final['dia'].max()]
+        )
+
         fig_line.update_layout(
             xaxis_title="Dia",
             yaxis_title="Total de Queimadas",
@@ -358,12 +363,12 @@ layout = html.Div([
         dbc.Col(html.B("Selecione um intervalo para visualização"), width=12, style={"textAlign": "center", "margin-bottom": "10px"}),
         dbc.Col([
             html.B("Data de início: "),
-            dcc.DatePickerSingle(id='dia-inicio-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY")
-        ], width=4, style={"textAlign": "center"}),
+            dcc.DatePickerSingle(id='dia-inicio-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY",
+                                 max_date_allowed=datetime.today().date())], width=4, style={"textAlign": "center"}),
         dbc.Col([
             html.B("Data de fim: "),
-            dcc.DatePickerSingle(id='dia-fim-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY")
-        ], width=4, style={"textAlign": "center"}),
+            dcc.DatePickerSingle(id='dia-fim-graficos', date=datetime.today().date(), display_format="DD/MM/YYYY",
+                                 max_date_allowed=datetime.today().date())], width=4, style={"textAlign": "center"}),
         dbc.Col([
             dbc.Button("Gerar Gráficos", id="btn-consolidados", color="primary", className="mt-1")
         ], width=4, style={"textAlign": "center"}),
