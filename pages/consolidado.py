@@ -51,7 +51,6 @@ async def fetch_interval_data(intervalo_dias):
                             if response.status == 200:
                                 csv_data = await response.text()
                                 df = pd.DataFrame(pd.read_csv(io.StringIO(csv_data)))
-                                df['mes'] = mes
                                 df['dia'] = pd.to_datetime(df['data_hora_gmt']).dt.strftime('%Y%m%d')
                                 df = df[df['dia'].isin(intervalo_dias)]
                                 data.append(df)
@@ -81,7 +80,7 @@ async def fetch_interval_data(intervalo_dias):
 
     return df
 
-async def fetch_data_consolidados(urls):
+async def fetch_data_consolidados(urls, intervalo_de_dias):
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         dataframes = []
 
@@ -92,6 +91,8 @@ async def fetch_data_consolidados(urls):
                         if response.status == 200:
                             csv_data = await response.text()
                             df = pd.read_csv(io.StringIO(csv_data))
+                            df['dia'] = pd.to_datetime(df['data_hora_gmt']).dt.strftime('%Y%m%d')
+                            df = df[df['dia'].isin(intervalo_de_dias)]
                             dataframes.append(df)
                         break
                 except asyncio.TimeoutError:
@@ -121,12 +122,21 @@ def grafico_barras_queimadas_biomas_consolidado(date1, date2, n):
         else:
             for dia in range(0, diferenca_dias + 1):
                 intervalo_de_dias.append((data_fim - timedelta(days=dia)).strftime("%Y%m%d"))
+        if len(intervalo_de_dias) <= 2:
+            urls = [
+                f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
+                for dia in intervalo_de_dias
+            ]
 
-        urls = [
-            f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{dia}.csv"
-            for dia in intervalo_de_dias
-        ]
-        dataframes = asyncio.run(fetch_data_consolidados(urls))
+        else:
+            intervalo_meses = pd.date_range(pd.to_datetime(data_inicio), pd.to_datetime(data_fim),
+                                            inclusive='both').strftime('%Y%m').unique().tolist()
+
+            urls = [
+                f"https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/mensal/Brasil/focos_mensal_br_{mes}.csv"
+                for mes in intervalo_meses
+            ]
+        dataframes = asyncio.run(fetch_data_consolidados(urls, intervalo_de_dias))
 
         for df in dataframes:
             biomas = df['bioma'].unique()
